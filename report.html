@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<script src="../js/auth.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WillowShop — ລາຍງານຍອດຂາຍແລະກຳໄລ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:      #0a0f1a;
+    --surface: #111827;
+    --surface2:#1a2535;
+    --border:   rgba(99,179,237,0.12);
+    --accent:  #38bdf8;
+    --accent2: #06b6d4;
+    --accent3: #34d399;
+    --warn:    #f59e0b;
+    --danger:  #f87171;
+    --text:    #e2e8f0;
+    --muted:   #64748b;
+    --green:   #10b981;
+    --mono:    'Space Mono', monospace;
+  }
+  body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; font-size: 14px; }
+
+  .sidebar { width: 220px; height: 100vh; position: sticky; top: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+  .logo { padding: 24px 20px 20px; border-bottom: 1px solid var(--border); }
+  .logo-icon { font-size: 28px; margin-bottom: 4px; }
+  .logo-name { font-size: 16px; font-weight: 600; color: var(--accent); }
+  .logo-sub  { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+  .nav { padding: 12px 10px; flex: 1; }
+  .nav-label { font-size: 10px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; padding: 12px 10px 6px; font-family: var(--mono); }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; color: var(--muted); font-size: 13px; margin-bottom: 2px; transition: all .18s; text-decoration: none; }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(56,189,248,.1); color: var(--accent); border: 1px solid rgba(56,189,248,.2); }
+  .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+  .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); }
+  .user-pill { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 32px; height: 32px; background: linear-gradient(135deg,var(--accent),var(--accent2)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: #0a0f1a; }
+  .user-name { font-size: 12px; font-weight: 500; }
+  .user-role { font-size: 10px; color: var(--muted); font-family: var(--mono); }
+
+  /* ── Logout Button ── */
+  .logout-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 8px;
+    color: #ef4444;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .logout-btn:hover { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.35); }
+
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar { height: 56px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; flex-shrink: 0; }
+  .page-title { font-size: 16px; font-weight: 500; }
+  .page-sub   { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .btn { padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; border: none; font-family: var(--font); transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: rgba(99,179,237,.3); }
+  .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+  .export-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+  .tab-bar { display: flex; background: var(--surface2); border: 1px solid var(--border); padding: 4px; border-radius: 8px; gap: 4px; }
+  .tab { padding: 6px 14px; font-size: 12px; color: var(--muted); border-radius: 6px; cursor: pointer; border: 1px solid transparent; transition: all .15s; }
+  .tab.active { background: var(--bg); color: var(--accent); font-weight: 500; border-color: var(--border); }
+  .date-filter { display: flex; align-items: center; gap: 8px; }
+  .date-filter span { font-size: 12px; color: var(--muted); }
+  .date-input { width: 140px; padding: 5px 10px; font-size: 12px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; outline: none; }
+
+  .stats { display: grid; grid-template-columns: repeat(5,1fr); gap: 14px; margin-bottom: 24px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; position: relative; overflow: hidden; }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg,var(--accent),var(--accent2)); }
+  .stat-label { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-bottom: 8px; }
+  .stat-value { font-size: 26px; font-weight: 600; color: var(--text); line-height: 1; }
+  .stat-unit  { font-size: 13px; color: var(--muted); margin-left: 4px; }
+  .stat-badge { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 11px; font-family: var(--mono); padding: 2px 8px; border-radius: 99px; }
+  .badge-up     { background: rgba(52,211,153,.1); color: var(--accent3); }
+  .badge-warn   { background: rgba(245,158,11,.1); color: var(--warn); }
+  .badge-info   { background: rgba(56,189,248,.1); color: var(--accent); }
+  .badge-profit { background: rgba(52,211,153,.15); color: var(--accent3); font-weight: 600; }
+
+  .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+  .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .card-title { font-size: 13px; font-weight: 500; }
+  .card-body  { padding: 20px; }
+
+  .chart-box { height: 180px; display: flex; flex-direction: column; justify-content: flex-end; }
+  .chart-bars { display: flex; align-items: flex-end; gap: 8px; height: 140px; }
+  .bar-group { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+  .bar { width: 100%; border-radius: 4px 4px 0 0; transition: opacity .15s; cursor: pointer; }
+  .bar:hover { opacity: .75; }
+  .bar-label { font-size: 10px; color: var(--muted); font-family: var(--mono); }
+
+  .top-fish { display: flex; flex-direction: column; gap: 12px; }
+  .top-item { display: flex; align-items: center; gap: 10px; }
+  .top-rank { font-size: 11px; font-family: var(--mono); color: var(--muted); min-width: 22px; }
+  .top-bar-wrap { flex: 1; background: var(--bg); border-radius: 99px; height: 6px; overflow: hidden; }
+  .top-bar-fill { height: 100%; border-radius: 99px; }
+  .top-name { font-size: 12px; min-width: 100px; }
+  .top-val  { font-size: 12px; font-family: var(--mono); color: var(--green); min-width: 52px; text-align: right; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 10px 16px; text-align: left; font-size: 10px; color: var(--muted); font-family: var(--mono); letter-spacing: .06em; text-transform: uppercase; border-bottom: 1px solid var(--border); background: var(--surface2); font-weight: 400; }
+  td { padding: 12px 16px; border-bottom: 1px solid rgba(99,179,237,.05); font-size: 13px; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(56,189,248,.03); }
+  .sale-name   { font-weight: 500; font-size: 13px; }
+  .sale-time   { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .sale-amount { font-family: var(--mono); color: var(--warn); font-weight: 600; }
+  .profit-amount { font-family: var(--mono); color: var(--accent3); font-weight: 600; }
+
+  .print-only-header { display: none; }
+  @media print {
+    .sidebar, .topbar, .export-bar, .stats, .report-grid { display: none !important; }
+    .print-only-header { display: block !important; margin-bottom: 20px !important; border-bottom: 3px double #000 !important; padding-bottom: 12px !important; }
+    .print-meta-row { display: flex; justify-content: space-between; font-size: 13px; color: #000; margin-top: 6px; }
+    html, body { background: #fff !important; color: #000 !important; }
+    .main { margin: 0 !important; padding: 0 !important; }
+    .content { padding: 0 !important; background: #fff !important; }
+    .card { border: none !important; box-shadow: none !important; }
+    .card-header { background: #fff !important; border-bottom: 1px solid #000 !important; }
+    .card-title  { color: #000 !important; font-size: 16px !important; }
+    table { background: #fff !important; }
+    th { background: #eee !important; color: #000 !important; border-bottom: 2px solid #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    td { border-bottom: 1px solid #ddd !important; color: #000 !important; }
+    .sale-amount, .profit-amount { color: #000 !important; font-weight: bold !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">🐠</div>
+    <div class="logo-name">WillowShop</div>
+    <div class="logo-sub">ລະບົບຈັດການຮ້ານຂາຍປາສວຍງາມ</div>
+  </div>
+  <div class="nav">
+    <div class="nav-label">ເມນູຫຼັກ</div>
+    <a class="nav-item" href="stock.html"><span class="nav-icon">📦</span> ສະຕອັກປາ</a>
+    <a class="nav-item" href="pos.html"><span class="nav-icon">🛒</span> ຂາຍສິນຄ້າ</a>
+    <a class="nav-item" href="supplier.html"><span class="nav-icon">🚚</span> ຮັບປາເຂົ້າ</a>
+    <a class="nav-item active" href="report.html"><span class="nav-icon">📊</span> ລາຍງານ</a>
+    <div class="nav-label">ລະບົບ</div>
+    <a class="nav-item" href="#"><span class="nav-icon">⚙️</span> ຕັ້ງຄ່າ</a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-pill">
+      <div class="avatar">A</div>
+      <div>
+        <div class="user-name">Admin</div>
+        <div class="user-role">ເຈົ້າຂອງຮ້ານ</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="handleLogout()">🚪 ອອກຈາກລະບົບ</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title">ລາຍງານຍອດຂາຍແລະກຳໄລ</div>
+      <div class="page-sub">ພາບລວມຜົນປະກອບການ ລາຍໄດ້ ແລະກໍາໄລສຸດທິ</div>
+    </div>
+    <button class="btn" onclick="printReport()">📄 Export PDF</button>
+  </div>
+
+  <div class="content">
+    <div class="export-bar">
+      <div class="tab-bar">
+        <div class="tab active" onclick="switchTab(this)">ມື້ນີ້</div>
+        <div class="tab" onclick="switchTab(this)">ທິດນີ້</div>
+        <div class="tab" onclick="switchTab(this)">ເດືອນນີ້</div>
+      </div>
+      <div class="date-filter">
+        <span>ຫຼືເລືອກຊ່ວງເວລາ:</span>
+        <input class="date-input" type="date" value="2026-05-01">
+        <span>ถึง</span>
+        <input class="date-input" type="date" value="2026-05-25">
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">ຍຶດຂາຍມື້ນີ້</div>
+        <div class="stat-value">฿3,240</div>
+        <div class="stat-badge badge-up">↑ 12% ຈາກມື້ວານ</div>
+      </div>
+      <div class="stat-card" style="border-left: 3px solid var(--green);">
+        <div class="stat-label" style="color:var(--green);font-weight:600;">ກຳໄລສຸດທິມື້ນີ້</div>
+        <div class="stat-value" style="color:var(--green);">฿1,410</div>
+        <div class="stat-badge badge-profit">ມາຈິ້ນ 43.5%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">ຈໍານວນທີ່ຂາຍໄດ້</div>
+        <div class="stat-value">18<span class="stat-unit">ໂຕ</span></div>
+        <div class="stat-badge badge-up">↑ 5 ຄັ້ງ</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">ຍອດຂາຍເດືອນນີ້</div>
+        <div class="stat-value">฿28,500</div>
+        <div class="stat-badge badge-warn">↓ 3% ຈາກເດືອນທີ່ແລ້ວ</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">ສິນຄ້າຂາຍດີສຸດ</div>
+        <div class="stat-value" style="font-size:16px;color:var(--accent);">ປາກັດ</div>
+        <div class="stat-badge badge-info">42 ໂຕ / ເດືອນ</div>
+      </div>
+    </div>
+
+    <div class="report-grid">
+      <div class="card">
+        <div class="card-header"><div class="card-title">📈 ຍອດຂາຍແລະກຳໄລ (ທຽບລາຍວັນ)</div></div>
+        <div class="card-body">
+          <div class="chart-box">
+            <div class="chart-bars">
+              <div class="bar-group"><div class="bar" style="height:60%;background:var(--green);" title="ຈັນ: ฿850"></div><div class="bar-label">ຈ</div></div>
+              <div class="bar-group"><div class="bar" style="height:80%;background:var(--green);" title="ອັງຄານ: ฿1,100"></div><div class="bar-label">ອ</div></div>
+              <div class="bar-group"><div class="bar" style="height:45%;background:var(--green);" title="ພຸດ: ฿600"></div><div class="bar-label">ພ</div></div>
+              <div class="bar-group"><div class="bar" style="height:90%;background:var(--green);" title="ພະຫັດ: ฿1,300"></div><div class="bar-label">ພຫ</div></div>
+              <div class="bar-group"><div class="bar" style="height:70%;background:var(--green);" title="ສຸກ: ฿950"></div><div class="bar-label">ສຸກ</div></div>
+              <div class="bar-group"><div class="bar" style="height:100%;background:var(--green);" title="ເສົາ: ฿1,410"></div><div class="bar-label">ສ</div></div>
+              <div class="bar-group"><div class="bar" style="height:55%;background:var(--green);" title="ອາທິດ: ฿780"></div><div class="bar-label">ອາ</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">🏆 ສິນຄ້າກຳໄລ 5 ອັນດັບ</div></div>
+        <div class="card-body">
+          <div class="top-fish">
+            <div class="top-item"><span class="top-rank">#1</span><span class="top-name">ປາກັດ</span><div class="top-bar-wrap"><div class="top-bar-fill" style="width:100%;background:var(--green)"></div></div><span class="top-val">฿2,100</span></div>
+            <div class="top-item"><span class="top-rank">#2</span><span class="top-name">ປາອະໂຣວານ່າ</span><div class="top-bar-wrap"><div class="top-bar-fill" style="width:85%;background:var(--green)"></div></div><span class="top-val">฿1,800</span></div>
+            <div class="top-item"><span class="top-rank">#3</span><span class="top-name">ປາດິສຄັດ</span><div class="top-bar-wrap"><div class="top-bar-fill" style="width:60%;background:var(--green)"></div></div><span class="top-val">฿1,200</span></div>
+            <div class="top-item"><span class="top-rank">#4</span><span class="top-name">ປານີອອນ</span><div class="top-bar-wrap"><div class="top-bar-fill" style="width:45%;background:var(--green)"></div></div><span class="top-val">฿760</span></div>
+            <div class="top-item"><span class="top-rank">#5</span><span class="top-name">ອາຫານປາ</span><div class="top-bar-wrap"><div class="top-bar-fill" style="width:30%;background:var(--green)"></div></div><span class="top-val">฿450</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="print-only-header">
+        <h2 style="margin:0;font-size:22px;color:#000;">WillowShop — ລາຍງານຍອດຂາຍ ແລະ ກຳໄລສຸດທິ</h2>
+        <div class="print-meta-row">
+          <span>ປະເພດເອກະສານ: ສະຫຼຸບລາຍການຂາຍແລະກຳໄລປະຈໍາວັນ</span>
+          <span>ວັນທີ່ອອກເອກະສານ: <strong id="printDate">--/--/----</strong></span>
+        </div>
+      </div>
+      <div class="card-header">
+        <div class="card-title">🧾 ລາຍງານປະຫວັດການຂາຍ ແລະ ຄໍານວນກຳໄລ</div>
+        <span style="font-size:11px;font-family:var(--mono);color:var(--muted);background:rgba(255,255,255,.05);padding:2px 8px;border-radius:20px;">5 ລາຍການ</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>ລາຍການສິນຄ້າ</th>
+              <th>ເວລາຂາຍ</th>
+              <th>ຈໍານວນ</th>
+              <th>ຍອດຂາຍສຸດທິ</th>
+              <th>ຕົ້ນທຶນລວມ</th>
+              <th style="color:var(--green);">ກຳໄລສຸດທິ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><div class="sale-name">ປາກັດ × 2, ปลานีออน × 5</div></td><td><div class="sale-time">09:15</div></td><td>7 ໂຕ</td><td class="sale-amount">฿425</td><td>฿210</td><td class="profit-amount">฿215</td></tr>
+            <tr><td><div class="sale-name">ປາອະໂຣວານ່າ × 1</div></td><td><div class="sale-time">10:32</div></td><td>1 ตัว</td><td class="sale-amount">฿8,500</td><td>฿6,700</td><td class="profit-amount">฿1,800</td></tr>
+            <tr><td><div class="sale-name">ปลาหางนกยูง × 10, อาหารปลา × 2</div></td><td><div class="sale-time">11:45</div></td><td>12 ລາຍການ</td><td class="sale-amount">฿390</td><td>฿240</td><td class="profit-amount">฿150</td></tr>
+            <tr><td><div class="sale-name">ปลาเทวดา × 2, ปลาดิสคัส × 1</div></td><td><div class="sale-time">13:20</div></td><td>3 ตัว</td><td class="sale-amount">฿1,600</td><td>฿1,050</td><td class="profit-amount">฿550</td></tr>
+            <tr><td><div class="sale-name">ປາກັດ × 3, อาหารปลากัด × 1</div></td><td><div class="sale-time">15:08</div></td><td>4 ລາຍການ</td><td class="sale-amount">฿495</td><td>฿280</td><td class="profit-amount">฿215</td></tr>
+          </tbody>
+          <tfoot style="border-top:2px solid var(--border);">
+            <tr style="font-weight:bold;background:rgba(255,255,255,.02);">
+              <td colspan="3" style="text-align:right;">ລວມທັງໝົດມື້ນີ້:</td>
+              <td class="sale-amount">฿11,410</td>
+              <td>฿8,480</td>
+              <td class="profit-amount">฿2,930</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function switchTab(el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+function printReport() {
+  const now = new Date();
+  const d = String(now.getDate()).padStart(2,'0');
+  const m = String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById('printDate').innerText = `${d}/${m}/${now.getFullYear()}`;
+  window.print();
+}
+function handleLogout() {
+  if (confirm('ຕ້ອງການອອກຈາກລະບົບຫຼືບໍ່?')) {
+    localStorage.removeItem('aq_role');
+    localStorage.removeItem('aq_name');
+    localStorage.removeItem('aq_label');
+    window.location.href = 'login.html';
+  }
+}
+</script>
+</body>
+</html>

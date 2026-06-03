@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<script src="../js/auth.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WillowShop — ສະຕອັກປາ</title>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+.grid2 { display: grid; grid-template-columns: 1fr 300px; gap: 16px; }
+.fish-name { font-weight: 500; }
+.fish-species { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+.price-val { font-family: var(--mono); color: var(--accent3); }
+.alert-card { background: rgba(245,158,11,.06); border: 1px solid rgba(245,158,11,.2); border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
+.alert-title { font-size: 12px; font-weight: 500; color: var(--warn); margin-bottom: 12px; }
+.alert-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(245,158,11,.08); font-size: 12px; }
+.alert-item:last-child { border-bottom: none; }
+.alert-stock { font-family: var(--mono); color: var(--danger); font-size: 11px; }
+.hidden { display: none; }
+
+.item-thumb-container {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f3f4f6;
+  border: 1px solid rgba(0,0,0,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.item-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cell-flex {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ── Logout Button ── */
+.logout-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 8px;
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.logout-btn:hover {
+  background: rgba(239,68,68,0.15);
+  border-color: rgba(239,68,68,0.35);
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">🐠</div>
+    <div class="logo-name">WillowShop</div>
+    <div class="logo-sub">ລະບົບຈັດການຮ້ານຂາຍປາສວຍງາມ</div>
+  </div>
+  <div class="nav">
+    <div class="nav-label">ເມນູຫຼັກ</div>
+    <a class="nav-item active" href="stock.html"><span class="nav-icon">📦</span> ສະຕອັກປາ</a>
+    <a class="nav-item" href="pos.html"><span class="nav-icon">🛒</span> ຂາຍສິນຄ້າ</a>
+    <a class="nav-item" href="supplier.html"><span class="nav-icon">🚚</span> ຮັບປາເຂົ້າ</a>
+    <a class="nav-item" href="report.html"><span class="nav-icon">📊</span> ລາຍງານ</a>
+    <div class="nav-label">ລະບົບ</div>
+    <a class="nav-item" href="#"><span class="nav-icon">⚙️</span> ຕັ້ງຄ່າ</a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-pill">
+      <div class="avatar">A</div>
+      <div><div class="user-name">Admin</div><div class="user-role">ເຈົ້າຂອງຮ້ານ</div></div>
+    </div>
+    <button class="logout-btn" onclick="handleLogout()">
+      🚪 ອອກຈາກລະບົບ
+    </button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title">ສະຕອັກປາ</div>
+      <div class="page-sub">ຈັດການປານໍ້າຈືດແລະອາຫານປາ</div>
+    </div>
+    <div class="topbar-right"></div>
+  </div>
+
+  <div class="content">
+    <div class="stats">
+      <div class="stat-card blue">
+        <div class="stat-label">ປານໍ້າຈືດ</div>
+        <div class="stat-value" id="stat-fish-count">0<span class="stat-unit">ຊະນິດ</span></div>
+        <div class="stat-badge badge-info" id="stat-fish-total">↑ ສະຕອັກລວມ 0 ໂຕ</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">ອາຫານປາ</div>
+        <div class="stat-value" id="stat-food-count">0<span class="stat-unit">ລາຍການ</span></div>
+        <div class="stat-badge badge-up" id="stat-food-total">↑ ສະຕອັກລວມ 0 ອັນ</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-label">ໃກ້ໝົດ</div>
+        <div class="stat-value" id="stat-low-count">0<span class="stat-unit">ລາຍການ</span></div>
+        <div class="stat-badge badge-warn">⚠ ຕ້ອງເຕີມ</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-label">ມູນຄ່າສະຕອັກລວມ (ທຸນ)</div>
+        <div class="stat-value" id="stat-total-value">฿0</div>
+        <div class="stat-badge badge-info">ປະມວນຜົນ</div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <div class="tab-bar">
+          <div class="tab active" id="tab-fish" onclick="switchTab('fish')">🐟 ປານໍ້າຈືດ</div>
+          <div class="tab" id="tab-food" onclick="switchTab('food')">🥣 ອາຫານປາ</div>
+        </div>
+
+        <div id="list-fish">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">ລາຍການສະຕອັກປານໍ້າຈືດ</div>
+              <input class="search-box" id="search-fish" placeholder="🔍 ຄົ້ນຫາປານໍ້າຈືດ..." oninput="renderStock()">
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>ຮູບພາບ / ຊື່ປາ / ສາຍພັນ</th>
+                  <th>ລາຄາຂາຍ</th>
+                  <th>ສະຕອັກ</th>
+                  <th>ສະຖານະ</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="table-fish-body">
+                </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="list-food" class="hidden">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">ລາຍການສະຕອັກອາຫານປາ</div>
+              <input class="search-box" id="search-food" placeholder="🔍 ຄົ້ນຫາອາຫານປາ..." oninput="renderStock()">
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>ຮູບພາບ / ຊື່ລາຍການອາຫານປາ</th>
+                  <th>ລາຄາຂາຍ</th>
+                  <th>ສະຕອັກ</th>
+                  <th>ສະຖານະ</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="table-food-body">
+                </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="alert-card">
+          <div class="alert-title">⚠ ສະຕອັກໃກ້ໝົດ (ໜ່ອຍກວ່າ 10 ອັນ)</div>
+          <div id="alert-list-container">
+            </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal-overlay" id="edit-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal">
+    <div class="modal-title" id="edit-modal-title">✏️ ແກ້ໄຂຂໍ້ມູນສິນຄ້າ</div>
+    <input type="hidden" id="edit-item-id">
+    
+    <div class="form-group">
+      <label class="form-label">ໝວດໝູ່ສິນຄ້າ</label>
+      <select class="form-select" id="edit-item-category" onchange="updateEditUnitLabel()">
+        <option value="fish">ປານໍ້າຈືດ</option>
+        <option value="food">ອາຫານປາ</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">ຮູບພາບສິນຄ້າ</label>
+      <input type="file" accept="image/*" class="form-input" id="edit-item-file" style="padding: 6px;">
+      <small style="color: var(--muted); font-size: 11px; display: block; margin-top: 4px;">ຖ້າບໍ່ຕ້ອງການປ່ຽນຮູບພາບ ບໍ່ຕ້ອງເລືອກໄຟລລະບົບຈະໃຊ້ຮູບເກົ່າ</small>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">ຊື່ສິນຄ້າ</label>
+      <input class="form-input" type="text" id="edit-item-name" placeholder="ເຊັ່ນ ປາກັດຈີນ">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">ຊື່ວິທະຍາສາດ / ຍີ່ຫໍ້</label>
+      <input class="form-input" type="text" id="edit-item-detail" placeholder="ເຊັ່ນ Betta splendens">
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label class="form-label">ລາຄາຕົ້ນທຶນ (฿)</label>
+        <input class="form-input" type="number" id="edit-item-cost" min="0">
+      </div>
+      <div>
+        <label class="form-label">ລາຄາຂາຍຈໍາໜ່າຍ (฿)</label>
+        <input class="form-input" type="number" id="edit-item-price" min="0">
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label" id="edit-unit-label">ຈໍານວນສິນຄ້າໃນສະຕອັກ</label>
+      <input class="form-input" type="number" id="edit-item-qty" min="0">
+    </div>
+
+    <div class="modal-actions" style="margin-top: 20px;">
+      <button class="btn btn-ghost" onclick="document.getElementById('edit-modal').style.display='none'">ຍົກເລີກ</button>
+      <button class="btn btn-primary" onclick="saveEditedItem()">ບັນທຶກການແກ້ໄຂ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let stockItems = [];
+
+// ข้อมูลจำลองเริ่มต้นสำหรับทดสอบระบบ
+const defaultStock = [
+  { id: 1, name: "ປາກັດ", detail: "Betta splendens", category: "fish", cost: 90, price: 150, qty: 12, imgHtml: '<img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=150&auto=format&fit=crop" class="item-thumb">' },
+  { id: 2, name: "ປາທອງ", detail: "Carassius auratus", category: "fish", cost: 50, price: 80, qty: 3, imgHtml: '<img src="https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=150&auto=format&fit=crop" class="item-thumb">' },
+  { id: 3, name: "ປານີອອນ", detail: "Paracheirodon innesi", category: "fish", cost: 15, price: 25, qty: 50, imgHtml: '<div style="font-size: 24px;">🐟</div>' },
+  { id: 4, name: "ອາຫານປາທອງເມັດນ້ອຍ (100g)", detail: "Goldfish Premium Food", category: "food", cost: 35, price: 55, qty: 25, imgHtml: '<img src="https://images.unsplash.com/photo-1608342385108-01fa49fe0fcc?w=150&auto=format&fit=crop" class="item-thumb">' }
+];
+
+window.addEventListener('DOMContentLoaded', () => {
+  const localData = localStorage.getItem('aqua_stock_items');
+  if (localData) {
+    stockItems = JSON.parse(localData);
+  } else {
+    stockItems = [...defaultStock];
+    localStorage.setItem('aqua_stock_items', JSON.stringify(stockItems));
+  }
+  renderStock();
+});
+
+function switchTab(tab) {
+  document.getElementById('list-fish').classList.toggle('hidden', tab !== 'fish');
+  document.getElementById('list-food').classList.toggle('hidden', tab !== 'food');
+  document.getElementById('tab-fish').classList.toggle('active', tab === 'fish');
+  document.getElementById('tab-food').classList.toggle('active', tab === 'food');
+}
+
+function updateEditUnitLabel() {
+  const category = document.getElementById('edit-item-category').value;
+  document.getElementById('edit-unit-label').innerText = category === 'fish' ? 'ຈໍານວນໃນຄັງ (ໂຕ)' : 'ຈໍານວນໃນຄັງ (ຊອງ/ກະປຸກ)';
+}
+
+function renderStock() {
+  const fishBody = document.getElementById('table-fish-body');
+  const foodBody = document.getElementById('table-food-body');
+  const alertContainer = document.getElementById('alert-list-container');
+  
+  const searchFishKey = document.getElementById('search-fish').value.toLowerCase();
+  const searchFoodKey = document.getElementById('search-food').value.toLowerCase();
+
+  fishBody.innerHTML = '';
+  foodBody.innerHTML = '';
+  alertContainer.innerHTML = '';
+
+  let fishTypes = 0, fishTotalQty = 0;
+  let foodTypes = 0, foodTotalQty = 0;
+  let lowStockCount = 0;
+  let totalCostValue = 0;
+
+  stockItems.forEach(item => {
+    // 💡 คำนวณมูลค่าต้นทุนรวมจริงคูณด้วยจำนวนตัว/ชิ้นที่มีอยู่จริงในสต็อก
+    totalCostValue += (item.cost * item.qty);
+    const isLow = item.qty < 10;
+    if (isLow) lowStockCount++;
+
+    const statusBadge = isLow 
+      ? `<span class="badge badge-low"><span class="dot dot-red"></span>ໃກ້ໝົດ</span>`
+      : `<span class="badge badge-ok"><span class="dot dot-green"></span>ປົກກະຕິ</span>`;
+
+    const unit = item.category === 'fish' ? 'ໂຕ' : 'ຊອງ/ກະປຸກ';
+
+    if (isLow) {
+      alertContainer.innerHTML += `
+        <div class="alert-item">
+          <span>${item.name}</span>
+          <span class="alert-stock">ເຫຼືອ ${item.qty} ${unit}</span>
+        </div>`;
+    }
+
+    const trHtml = `
+      <tr>
+        <td>
+          <div class="cell-flex">
+            <div class="item-thumb-container">${item.imgHtml || '🐟'}</div>
+            <div>
+              <div class="fish-name">${item.name}</div>
+              <div class="fish-species">${item.detail || '-'}</div>
+            </div>
+          </div>
+        </td>
+        <td class="price-val">฿${item.price.toLocaleString()}</td>
+        <td>${item.qty} ${unit}</td>
+        <td>${statusBadge}</td>
+        <td>
+          <div class="action-btns">
+            <button class="icon-btn" onclick="openEditModal(${item.id})">✏️</button>
+            <button class="icon-btn del" onclick="deleteItem(${item.id})">🗑</button>
+          </div>
+        </td>
+      </tr>`;
+
+    if (item.category === 'fish') {
+      fishTypes++;
+      fishTotalQty += item.qty;
+      if (item.name.toLowerCase().includes(searchFishKey) || (item.detail && item.detail.toLowerCase().includes(searchFishKey))) {
+        fishBody.innerHTML += trHtml;
+      }
+    } else {
+      foodTypes++;
+      foodTotalQty += item.qty;
+      if (item.name.toLowerCase().includes(searchFoodKey) || (item.detail && item.detail.toLowerCase().includes(searchFoodKey))) {
+        foodBody.innerHTML += trHtml;
+      }
+    }
+  });
+
+  if (alertContainer.innerHTML === '') {
+    alertContainer.innerHTML = `<div style="text-align:center; color:var(--muted); font-size:12px; padding:10px 0;">ບໍ່ມີສິນຄ້າໃກ້ໝົດສະຕອັກ</div>`;
+  }
+
+  document.getElementById('stat-fish-count').innerHTML = `${fishTypes}<span class="stat-unit">ຊະນິດ</span>`;
+  document.getElementById('stat-fish-total').innerText = `↑ ສະຕອັກລວມ ${fishTotalQty} ໂຕ`;
+  
+  document.getElementById('stat-food-count').innerHTML = `${foodTypes}<span class="stat-unit">ລາຍການ</span>`;
+  document.getElementById('stat-food-total').innerText = `↑ ສະຕອັກລວມ ${foodTotalQty} ອັນ`;
+  
+  document.getElementById('stat-low-count').innerHTML = `${lowStockCount}<span class="stat-unit">ລາຍການ</span>`;
+  
+  // 🌟 บันทึกแสดงผลจริงหลังคำนวณเรียบร้อยแล้วลงบนการ์ดสีแดง
+  document.getElementById('stat-total-value').innerText = `฿${totalCostValue.toLocaleString()}`;
+}
+
+function deleteItem(id) {
+  const targetItem = stockItems.find(item => item.id === id);
+  if (!targetItem) return;
+
+  if (confirm(`ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລົບລາຍການ "${targetItem.name}" ອອກຈາກຄັງສິນຄ້າຖາວອນ?`)) {
+    stockItems = stockItems.filter(item => item.id !== id);
+    localStorage.setItem('aqua_stock_items', JSON.stringify(stockItems));
+    renderStock();
+  }
+}
+
+function openEditModal(id) {
+  const item = stockItems.find(item => item.id === id);
+  if (!item) return;
+
+  document.getElementById('edit-item-id').value = item.id;
+  document.getElementById('edit-modal-title').innerText = `✏️ ແກ້ໄຂຂໍ້ມູນ: ${item.name}`;
+  
+  document.getElementById('edit-item-category').value = item.category;
+  document.getElementById('edit-item-name').value = item.name;
+  document.getElementById('edit-item-detail').value = item.detail || '';
+  document.getElementById('edit-item-cost').value = item.cost || 0;
+  document.getElementById('edit-item-price').value = item.price;
+  document.getElementById('edit-item-qty').value = item.qty;
+  document.getElementById('edit-item-file').value = ''; 
+
+  updateEditUnitLabel();
+  document.getElementById('edit-modal').style.display = 'flex';
+}
+
+function saveEditedItem() {
+  const id = parseInt(document.getElementById('edit-item-id').value);
+  
+  const newCategory = document.getElementById('edit-item-category').value;
+  const newName = document.getElementById('edit-item-name').value.trim();
+  const newDetail = document.getElementById('edit-item-detail').value.trim();
+  const newCost = parseFloat(document.getElementById('edit-item-cost').value) || 0;
+  const newPrice = parseFloat(document.getElementById('edit-item-price').value) || 0;
+  const newQty = parseInt(document.getElementById('edit-item-qty').value) || 0;
+  const fileInput = document.getElementById('edit-item-file');
+
+  if (!newName) {
+    alert('ກະລຸນາປ້ອນຊື່ສິນຄ້າ');
+    return;
+  }
+  if (newCost < 0 || newPrice < 0 || newQty < 0) {
+    alert('ກະລຸນາປ້ອນຂໍ້ມູນຕົວເລກທີ່ຫຼາຍກວ່າຫຼືເທົ່າກັບ 0 ');
+    return;
+  }
+
+  const index = stockItems.findIndex(item => item.id === id);
+  if (index !== -1) {
+    stockItems[index].category = newCategory;
+    stockItems[index].name = newName;
+    stockItems[index].detail = newDetail;
+    stockItems[index].cost = newCost;
+    stockItems[index].price = newPrice;
+    stockItems[index].qty = newQty;
+    
+    if (fileInput.files && fileInput.files[0]) {
+      const url = URL.createObjectURL(fileInput.files[0]);
+      stockItems[index].imgHtml = `<img src="${url}" class="item-thumb">`;
+    }
+
+    localStorage.setItem('aqua_stock_items', JSON.stringify(stockItems));
+    document.getElementById('edit-modal').style.display = 'none';
+    renderStock(); // 🌟 อัปเดตตารางและการ์ดสถิติหลังเซฟข้อมูลทันที
+  }
+}
+
+function handleLogout() {
+  if (confirm('ຕ້ອງການອອກຈາກລະບົບຫຼືບໍ່?')) {
+    if (typeof sessionStorage !== 'undefined') sessionStorage.clear();
+    if (typeof localStorage !== 'undefined') localStorage.clear();
+    window.location.href = 'login.html';
+  }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AquaShop — ເຂົ້່າສູ່ລະບົບ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:      #0a0f1a;
+    --surface: #111827;
+    --surface2:#1a2535;
+    --border:  rgba(99,179,237,0.12);
+    --accent:  #38bdf8;
+    --accent2: #06b6d4;
+    --accent3: #34d399;
+    --warn:    #f59e0b;
+    --danger:  #f87171;
+    --text:    #e2e8f0;
+    --muted:   #64748b;
+    --mono:    'Space Mono', monospace;
+  }
+  body {
+    font-family: 'Prompt', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .login-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px 36px;
+    width: 360px;
+    max-width: 95vw;
+  }
+
+  .logo { text-align: center; margin-bottom: 28px; }
+  .logo-icon { font-size: 40px; }
+  .logo-name { font-size: 22px; font-weight: 600; color: var(--accent); margin-top: 8px; }
+  .logo-sub  { font-size: 12px; color: var(--muted); font-family: var(--mono); margin-top: 4px; }
+
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 11px; color: var(--muted); font-family: var(--mono); display: block; margin-bottom: 6px; letter-spacing: .04em; }
+  .form-input {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'Prompt', sans-serif;
+    outline: none;
+    transition: border .15s;
+  }
+  .form-input:focus { border-color: rgba(56,189,248,.4); }
+
+  .btn-login {
+    width: 100%;
+    padding: 11px;
+    background: var(--accent);
+    color: #0a0f1a;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'Prompt', sans-serif;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: opacity .15s;
+  }
+  .btn-login:hover { opacity: .88; }
+
+  .error-msg {
+    display: none;
+    background: rgba(248,113,113,.1);
+    border: 1px solid rgba(248,113,113,.3);
+    color: var(--danger);
+    font-size: 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-top: 12px;
+    text-align: center;
+  }
+
+  .accounts-hint {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+  .accounts-hint div { margin-bottom: 6px; }
+  .hint-role { color: var(--accent3); }
+  .hint-sep  { color: var(--border); margin: 0 6px; }
+</style>
+</head>
+<body>
+
+<div class="login-box">
+  <div class="logo">
+    <div class="logo-icon">🐠</div>
+    <div class="logo-name">WillowShop</div>
+    <div class="logo-sub">ລະບົບຈັດການຮ້ານຂາຍປາສວຍງາມ</div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">ຊື່ຜູ້ໃຊ້</label>
+    <input class="form-input" id="username" type="text" placeholder="ປ້ອນຊື່ຜູ້ໃຊ້" autocomplete="off">
+  </div>
+  <div class="form-group">
+    <label class="form-label">ລະຫັດຜ່ານ</label>
+    <input class="form-input" id="password" type="password" placeholder="ປ້ອນລະຫັດຜ່ານ">
+  </div>
+
+  <button class="btn-login" onclick="doLogin()">ເຂົ້າສູ່ລະບົບ</button>
+  <div class="error-msg" id="errMsg">ຊື່ຜູ້ໃຊ້ຫຼືລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ</div>
+
+
+<script>
+  // ─── กำหนด account และ role ที่นี่ ───
+  const USERS = {
+    'admin':  { password: 'admin1234', role: 'admin',  name: 'Admin',    roleLabel: 'ເຈົ້າຂອງຮ້ານ' },
+    'staff':  { password: 'staff1234', role: 'staff',  name: 'พนักงาน',  roleLabel: 'พนักงานขาย' },
+  };
+
+  // ─── กำหนดว่าแต่ละ role เข้าหน้าไหนได้บ้าง ───
+  const ROLE_PAGES = {
+    admin: ['stock.html', 'pos.html', 'supplier.html', 'report.html'],
+    staff: ['pos.html'],
+  };
+
+  // ─── redirect หน้าแรกของแต่ละ role ───
+  const ROLE_HOME = {
+    admin: 'stock.html',
+    staff: 'pos.html',
+  };
+
+  function doLogin() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const user = USERS[username];
+
+    if (user && user.password === password) {
+      localStorage.setItem('aq_role',  user.role);
+      localStorage.setItem('aq_name',  user.name);
+      localStorage.setItem('aq_label', user.roleLabel);
+      window.location.href = ROLE_HOME[user.role];
+    } else {
+      document.getElementById('errMsg').style.display = 'block';
+    }
+  }
+
+  // กด Enter ได้
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  
+  
+</script>
+</body>
+</html>

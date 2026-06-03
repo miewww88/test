@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WillowShop — ຮັບສິນຄ້າເຂົ້າ</title>
+<script src="../js/auth.js" defer></script>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+.grid2 { display: grid; grid-template-columns: 1fr 320px; gap: 16px; }
+.fish-name { font-weight: 500; color: var(--text); }
+.fish-species { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+.price-val { font-family: var(--mono); color: var(--accent3); }
+.hidden { display: none; }
+.item-thumb-container { width: 42px; height: 42px; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; }
+.item-thumb { width: 100%; height: 100%; object-fit: cover; }
+.cell-flex { display: flex; align-items: center; gap: 10px; }
+.bill-summary { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+.summary-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+.summary-row span:last-child { font-family: var(--mono); color: var(--text); font-weight: 500; }
+.total-row { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+.total-price { font-size: 20px; font-weight: 600; color: #10b981; font-family: var(--mono); }
+.profit-indicator { margin-top: 10px; padding: 8px 12px; background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 6px; font-size: 11px; color: #10b981; display: flex; justify-content: space-between; }
+
+/* Styles for history table on dark UI */
+.history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.history-table th { padding: 10px 12px; text-align: left; background: rgba(255, 255, 255, 0.02); color: var(--muted); font-weight: 500; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.history-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.hist-date { font-family: var(--mono); color: var(--muted); white-space: nowrap; }
+.hist-supplier { color: var(--text); }
+.hist-note { color: var(--muted); font-size: 11px; display: block; margin-top: 2px; }
+.hist-items { color: var(--text); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hist-total { text-align: right; font-family: var(--mono); color: #10b981; font-weight: 500; }
+.badge-supplier { background: rgba(255, 255, 255, 0.08); padding: 2px 6px; border-radius: 4px; font-size: 12px; color: var(--text); display: inline-block; }
+
+/* modal section divider */
+.modal-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 16px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+/* ── Print / Export PDF ── */
+.print-only { display: none; }
+@media print {
+  .sidebar, .topbar, .card:not(.print-card), .modal-overlay, .btn-primary, .logout-btn, .btn-ghost { 
+    display: none !important; 
+  }
+  .print-only { display: block !important; }
+  html, body { 
+    background: #ffffff !important; 
+    color: #000000 !important; 
+    font-family: 'Sarabun', sans-serif, system-ui;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .main, .content { 
+    padding: 0 !important; 
+    margin: 0 !important; 
+    overflow: visible !important; 
+  }
+  .grid2 { display: block !important; }
+  .print-card { 
+    display: block !important; 
+    border: none !important; 
+    box-shadow: none !important; 
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .card-header { display: none !important; }
+  .print-header { 
+    padding-bottom: 12px; 
+    margin-bottom: 20px; 
+    border-bottom: 2px solid #000000; 
+  }
+  .print-header h2 {
+    margin: 0 0 6px 0;
+    font-size: 20px;
+    font-weight: bold;
+    color: #000000 !important;
+  }
+  .print-meta { 
+    display: flex; 
+    justify-content: space-between; 
+    font-size: 12px; 
+    color: #000000 !important; 
+  }
+  .history-table { 
+    width: 100% !important; 
+    border-collapse: collapse !important;
+    margin-top: 10px;
+  }
+  .history-table th:nth-child(1), .history-table td:nth-child(1) { width: 15% !important; }
+  .history-table th:nth-child(2), .history-table td:nth-child(2) { width: 30% !important; }
+  .history-table th:nth-child(3), .history-table td:nth-child(3) { width: 40% !important; }
+  .history-table th:nth-child(4), .history-table td:nth-child(4) { width: 15% !important; text-align: right !important; }
+  .history-table th { 
+    background: #f0f0f0 !important; 
+    color: #000000 !important; 
+    font-weight: bold !important;
+    padding: 8px 6px !important;
+    border-top: 1px solid #000000 !important;
+    border-bottom: 1px solid #000000 !important;
+    -webkit-print-color-adjust: exact; 
+    print-color-adjust: exact; 
+  }
+  .history-table td,
+  .history-table td span,
+  .history-table td small { 
+    padding: 10px 6px !important;
+    border-bottom: 1px solid #666666 !important; 
+    color: #000000 !important; 
+    background: transparent !important;
+    white-space: normal !important;
+  }
+  .badge-supplier { 
+    background: transparent !important; 
+    color: #000000 !important; 
+    padding: 0 !important;
+    font-weight: bold !important;
+    font-size: 14px !important;
+  }
+  .hist-date { color: #000000 !important; font-family: sans-serif !important; }
+  .hist-items { color: #000000 !important; white-space: normal !important; }
+  .hist-total { color: #000000 !important; font-weight: bold !important; text-align: right !important; }
+  .hist-note { color: #444444 !important; font-size: 12px !important; }
+}
+
+.logout-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 8px;
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.logout-btn:hover {
+  background: rgba(239,68,68,0.15);
+  border-color: rgba(239,68,68,0.35);
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">🐠</div>
+    <div class="logo-name">WillowShop</div>
+    <div class="logo-sub">ລະບົບຈັດການຮ້ານຂາຍປາສວຍງາມ</div>
+  </div>
+  <div class="nav">
+    <div class="nav-label">ເມນູຫຼັກ</div>
+    <a class="nav-item" href="stock.html"><span class="nav-icon">📦</span> ສະຕອັກປາ</a>
+    <a class="nav-item" href="pos.html"><span class="nav-icon">🛒</span> ຂາຍສິນຄ້າ</a>
+    <a class="nav-item active" href="supplier.html"><span class="nav-icon">🚚</span> ຮັບປາເຂົ້າ</a>
+    <a class="nav-item" href="report.html"><span class="nav-icon">📊</span> ລາຍງານ</a>
+    <div class="nav-label">ລະບົບ</div>
+    <a class="nav-item" href="#"><span class="nav-icon">⚙️</span> ຕັ້ງຄ່າ</a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-pill">
+      <div class="avatar">A</div>
+      <div><div class="user-name">Admin</div><div class="user-role">ເຈົ້າຂອງຮ້ານ</div></div>
+    </div>
+    <button class="logout-btn" onclick="handleLogout()">🚪 ອອກຈາກລະບົບ</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title">ຮັບສິນຄ້າຈາກຊັບພາຍເອີ້</div>
+      <div class="page-sub">ບັນທຶກເອກະສານແລະບັນທຶກລາຍການປາ/ອຸປະກອນເຂົ້າສູ່ລະບົບຄັງພ້ອມຂໍ້ມູນຄົບຖ້ວນໃນຄັ້ງດຽວ</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="grid2">
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📋 ເພີ່ມສິນຄ້າເຂົ້າບິນຮັບຂອງ</div>
+          </div>
+          <div style="padding: 20px;">
+            <p style="font-size: 13px; color: var(--muted); margin: 0 0 16px;">
+              ກົດປຸ່ມດ້ານລຸ່ມເພື່ອເພີ່ມສິນຄ້າໃໝ່ເຂົ້າບິນ ຂໍ້ມູນຊັບພາຍເອີ້ແລະວັນທີ່ຈະປ້ອນພ້ອມກັນໃນໜ້າຕ່າງດຽວເລີຍ
+            </p>
+            <button class="btn btn-primary" onclick="openModal()" style="width: 100%; justify-content: center;">
+              + ເພີ່ມສິນຄ້າເຂົ້າບິນ
+            </button>
+            <div class="form-group" style="margin-top: 16px; margin-bottom: 0;">
+              <label class="form-label">ໝາຍເຫດລວມຂອງບິນນີ້</label>
+              <input class="form-input" id="receive-note" placeholder="ເຊັ່ນ ບັນທຶກຊຸດປາກັດຂັດເກດ ຫຼືຂໍ້ມູນເພີ່ມເຕີມລອ໊ດຮັບເຂົ້າ">
+            </div>
+          </div>
+        </div>
+
+        <div class="card print-card" style="margin-top: 16px;">
+          <div class="card-header" style="justify-content: space-between;">
+            <div class="card-title">📜 ປະຫວັດການຮັບສິນຄ້າເຂົ້າສະຕອັກ</div>
+            <button class="btn btn-ghost" onclick="exportHistoryPDF()" style="font-size: 12px; padding: 6px 12px;">⬇ Export PDF</button>
+          </div>
+          <div style="overflow-x: auto;">
+            <div class="print-only print-header">
+              <h2>WillowShop — ລາຍງານປະຫວັດການຮັບສິນຄ້າເຂົ້າສະຕອັກ</h2>
+              <div class="print-meta">
+                <span>ປະເພດເອກະສານ: ລາຍການສະຫຼຸບການນຳເຂົ້າສິນຄ້າ (Suppliers)</span>
+                <span>ວັນທີ່ອອກເອກະສານ: <strong id="print-date">--/--/----</strong></span>
+              </div>
+            </div>
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>ວັນທີ່</th>
+                  <th>ຊັບພາຍເອີ້</th>
+                  <th>ລາຍການສິນຄ້າທີ່ຮັບເຂົ້າ</th>
+                  <th style="text-align: right;">ຕົ້ນທຶນລວມ</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body">
+                <tr id="history-empty-row">
+                  <td colspan="4" style="text-align: center; color: var(--muted); padding: 30px;">
+                    ຍັງບໍ່ມີປະຫວັດການບັນທຶກຮັບສິນຄ້າໃນເຊສຊັ່ນນີ້
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-header" style="justify-content: space-between;">
+            <div class="card-title">🛒 ລາຍການທ້າຍບິນ</div>
+            <div id="badge-count" style="font-size:11px; background:rgba(255,255,255,0.05); padding:2px 8px; border-radius:10px; font-family:var(--mono);">0 ລາຍການ</div>
+          </div>
+          <div style="max-height: 320px; overflow-y: auto;">
+            <table style="width: 100%; font-size: 12px;">
+              <thead>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                  <th style="padding: 8px 12px; text-align: left;">ສິນຄ້າ</th>
+                  <th style="padding: 8px 12px; text-align: center; width: 60px;">ຈໍານວນ</th>
+                  <th style="padding: 8px 12px; text-align: right; width: 70px;">ລາຄາລວມ</th>
+                  <th style="padding: 8px 4px; text-align: center; width: 30px;"></th>
+                </tr>
+              </thead>
+              <tbody id="cart-table-body">
+                <tr id="cart-empty-row">
+                  <td colspan="4" style="text-align: center; color: var(--muted); padding: 40px 10px;">
+                    ຍັງບໍ່ມີລາຍການສິນຄ້າຖືກເພີ່ມໃນບິນນີ້
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="padding: 16px;">
+            <div class="bill-summary">
+              <div class="summary-row"><span>ຈໍານວນຊະນິດສິນຄ້າ</span><span id="summary-types">0 ຊະນິດ/</span></div>
+              <div class="summary-row"><span>ຈໍານວນລວມທັງໝົດ</span><span id="summary-pieces">0 ອັນ</span></div>
+              <div class="total-row">
+                <span style="font-size: 13px;">ຕົ້ນທຶນລວມ</span>
+                <div class="total-price" id="summary-total">฿0</div>
+              </div>
+            </div>
+            <button class="btn btn-primary" id="btn-submit-all" style="width: 100%; margin-top: 16px; justify-content: center;">
+              ✓ ຍືນຍັນບັນທຶກຮັບສິນຄ້າເຂົ້າຄັງ
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal">
+    <div class="modal-title">+ ເພີ່ມສິນຄ້າເຂົ້າບິນ</div>
+
+    <div class="modal-section-label">📦 ຂໍ້ມູນການຮັບເຂົ້າ</div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">ຊັບພາຍເອີ້</label>
+        <input class="form-input" id="modal-supplier" list="supplier-options" placeholder="ພິມຊື່ຊັບພາຍເອີ້ ຫຼື ຄລິກເລືອກ">
+        <datalist id="supplier-options">
+          <option value="ร้านปลาสมชาย — 081-234-5678">
+          <option value="ร้านฟิชมาร์เก็ต — 02-123-4567">
+        </datalist>
+      </div>
+      <div>
+        <label class="form-label">ວັນທີ່ຮັບເຂົ້າ</label>
+        <input class="form-input" type="date" id="modal-receive-date">
+      </div>
+    </div>
+
+    <div class="modal-section-label">🐟 ຂໍ້ມູນສິນຄ້າ</div>
+    <div class="form-group">
+      <label class="form-label">ໝວກໝູ່</label>
+      <select class="form-select" id="modal-category" onchange="updateModalUnit()">
+        <option value="fish">ປານໍ້າຈືດ</option>
+        <option value="food">ຫົວອາຫານປາ</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">ຮູບພາບສິນຄ້າ</label>
+      <input type="file" accept="image/*" class="form-input" id="modal-file-input" style="padding: 6px;">
+      <small style="color: var(--muted); font-size: 11px; display: block; margin-top: 4px;">ລະບົບຈໍາລອງຮູບພາບຕົວຢ່າງເພື່ອນໍາຂໍ້ມູນໄປຂຶ້ນໂຄງຝັ່ງຂວາ</small>
+    </div>
+    <div class="form-group">
+      <label class="form-label">ຊື່ສິນຄ້າ</label>
+      <input class="form-input" id="modal-product-name" placeholder="ເຊັ່ນ ປາກັດສີແດງ">
+    </div>
+    <div class="form-group">
+      <label class="form-label">ຊື່ວິທະຍາສາດ / ຍີ່ຫໍ້</label>
+      <input class="form-input" id="modal-product-detail" placeholder="ເຊັ່ນ Betta splendens ຫຼື Hikari">
+    </div>
+
+    <div class="modal-section-label">💰 ລາຄາ ແລະ ຈໍານວນ</div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">ລາຄາຕົ້ນທຶນຮັບເຂົ້າ (฿)</label>
+        <input class="form-input" type="number" id="modal-product-price" value="0" min="0" oninput="calculateLiveProfit()" onfocus="this.select()">
+      </div>
+      <div>
+        <label class="form-label">ລາຄາຂາຍຈໍາໜ່າຍ (฿)</label>
+        <input class="form-input" type="number" id="modal-product-sale-price" value="0" min="0" oninput="calculateLiveProfit()" onfocus="this.select()">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="modal-unit-label">ຈໍານວນ (ໂຕ)</label>
+      <input class="form-input" type="number" id="modal-product-qty" value="1" min="1" onfocus="this.select()">
+    </div>
+    <div class="profit-indicator" id="profit-panel">
+      <span>ສ່ວນຕ່າງກຳໄລຄາດການ:</span>
+      <span id="profit-text" style="font-weight: 500; font-family: var(--mono);">฿0 (0%)</span>
+    </div>
+
+    <div class="modal-actions" style="margin-top: 16px;">
+      <button class="btn btn-ghost" onclick="closeModal()">ຍົກເລີກ</button>
+      <button class="btn btn-primary" onclick="handleAddItem()">ບັນທຶກເພີ່ມລົງບິນ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let receiveCart = [];
+let receiveHistory = [];
+
+function openModal() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('modal-receive-date').value = today;
+  document.getElementById('modal').style.display = 'flex';
+}
+
+function updateModalUnit() {
+  const category = document.getElementById('modal-category').value;
+  document.getElementById('modal-unit-label').innerText = category === 'fish' ? 'ຈໍານວນ (ໂຕ)' : 'ຈໍານວນ (ຊອງ/ກະປຸກ)';
+}
+
+function calculateLiveProfit() {
+  const cost = parseFloat(document.getElementById('modal-product-price').value) || 0;
+  const sale = parseFloat(document.getElementById('modal-product-sale-price').value) || 0;
+  const profitText = document.getElementById('profit-text');
+  const profitPanel = document.getElementById('profit-panel');
+  if (cost <= 0 || sale <= 0) { profitText.innerText = '฿0 (0%)'; profitText.style.color = '#10b981'; return; }
+  const profitAmount = sale - cost;
+  const profitMargin = (profitAmount / sale) * 100;
+  if (profitAmount >= 0) {
+    profitText.innerText = `+฿${profitAmount.toLocaleString()} (${profitMargin.toFixed(1)}%)`;
+    profitText.style.color = '#10b981';
+    profitPanel.style.background = 'rgba(16, 185, 129, 0.06)';
+    profitPanel.style.borderColor = 'rgba(16, 185, 129, 0.15)';
+  } else {
+    profitText.innerText = `฿${profitAmount.toLocaleString()} (${profitMargin.toFixed(1)}%) ຕໍ່າກວ່າທຶນ!`;
+    profitText.style.color = '#ef4444';
+    profitPanel.style.background = 'rgba(239, 68, 68, 0.06)';
+    profitPanel.style.borderColor = 'rgba(239, 68, 68, 0.15)';
+  }
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+  document.getElementById('modal-supplier').value = ''; // เคลียร์ค่าซัพพลายเออร์หลังปิด
+  document.getElementById('modal-product-name').value = '';
+  document.getElementById('modal-product-detail').value = '';
+  document.getElementById('modal-product-price').value = '0';
+  document.getElementById('modal-product-sale-price').value = '0';
+  document.getElementById('modal-product-qty').value = '1';
+  document.getElementById('modal-file-input').value = '';
+  calculateLiveProfit();
+}
+
+function handleAddItem() {
+  const name = document.getElementById('modal-product-name').value.trim();
+  const detail = document.getElementById('modal-product-detail').value.trim();
+  const price = parseFloat(document.getElementById('modal-product-price').value) || 0;
+  const salePrice = parseFloat(document.getElementById('modal-product-sale-price').value) || 0;
+  const qty = parseInt(document.getElementById('modal-product-qty').value) || 0;
+  const category = document.getElementById('modal-category').value;
+  
+  // ดึงค่าซัพพลายเออร์จากช่องข้อความที่ผู้ใช้พิมพ์หรือเลือก
+  let supplier = document.getElementById('modal-supplier').value.trim();
+  if(!supplier) { supplier = "ຊັບພາຍເອີ້ທົ່ວໄປ"; } // ค่าเริ่มต้นกรณีไม่ได้กรอกอะไรเลย
+
+  const receiveDate = document.getElementById('modal-receive-date').value;
+
+  if (!name) { alert('ກະລຸນາປ້ອນຊື່ສິນຄ້າ'); return; }
+  if (qty <= 0) { alert('ລະບຸຈໍານວນສິນຄ້າທີ່ຖືກຕ້ອງ'); return; }
+  if (salePrice <= 0) { alert('ກະລຸນາລລະບຸລາຄາຂາຍຈໍາໜ່າຍ ເພື່ອຄວາມສະດວກໃນການອັບເດດໜ້າຮ້ານ'); return; }
+  if (!receiveDate) { alert('ກະລຸນາລະບຸວັນທີ່ຮັບເຂົ້າ'); return; }
+
+  const fileInput = document.getElementById('modal-file-input');
+  let imgHtml = category === 'fish' ? '<div style="font-size: 20px;">🐟</div>' : '<div style="font-size: 20px;">🥣</div>';
+  if (fileInput.files && fileInput.files[0]) {
+    const url = URL.createObjectURL(fileInput.files[0]);
+    imgHtml = `<img src="${url}" class="item-thumb">`;
+  }
+
+  receiveCart.push({ id: Date.now(), name, detail, price, salePrice, qty, category, imgHtml, supplier, receiveDate });
+  renderCart();
+  closeModal();
+}
+
+function renderCart() {
+  const tbody = document.getElementById('cart-table-body');
+  if (receiveCart.length === 0) {
+    tbody.innerHTML = `<tr id="cart-empty-row"><td colspan="4" style="text-align: center; color: var(--muted); padding: 40px 10px;">ຍັງບໍ່ມີລາຍການສິນຄ້າທີ່ຖືກເພີ່ມໃນບິນນີ້</td></tr>`;
+    document.getElementById('badge-count').innerText = '0 ລາຍການ';
+    document.getElementById('summary-types').innerText = '0 ຊະນິດ';
+    document.getElementById('summary-pieces').innerText = '0 ອັນ';
+    document.getElementById('summary-total').innerText = '฿0';
+    return;
+  }
+  tbody.innerHTML = '';
+  let totalPieces = 0, grandTotal = 0;
+  receiveCart.forEach(item => {
+    const itemTotalPrice = item.price * item.qty;
+    totalPieces += item.qty;
+    grandTotal += itemTotalPrice;
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
+    tr.innerHTML = `
+      <td style="padding: 10px 12px;">
+        <div class="cell-flex">
+          <div class="item-thumb-container">${item.imgHtml}</div>
+          <div>
+            <div class="fish-name" style="font-size:13px;">${item.name}</div>
+            <div class="fish-species">${item.detail || '-'} | ຂາຍ: ฿${item.salePrice.toLocaleString()}</div>
+            <div class="fish-species" style="color:rgba(255,255,255,0.3);">${item.supplier} · ${item.receiveDate}</div>
+          </div>
+        </div>
+      </td>
+      <td style="padding: 10px 12px; text-align: center; font-family: var(--mono);">${item.qty}</td>
+      <td style="padding: 10px 12px; text-align: right; font-family: var(--mono); color: var(--accent3);">฿${itemTotalPrice.toLocaleString()}</td>
+      <td style="padding: 10px 4px; text-align: center;">
+        <button style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:14px;" onclick="removeItem(${item.id})">🗑</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('badge-count').innerText = `${receiveCart.length} ລາຍການ`;
+  document.getElementById('summary-types').innerText = `${receiveCart.length} ຊະນິດ`;
+  document.getElementById('summary-pieces').innerText = `${totalPieces} ອັນ`;
+  document.getElementById('summary-total').innerText = `฿${grandTotal.toLocaleString()}`;
+}
+
+function removeItem(id) {
+  receiveCart = receiveCart.filter(item => item.id !== id);
+  renderCart();
+}
+
+function renderHistory() {
+  const tbody = document.getElementById('history-table-body');
+  if (receiveHistory.length === 0) {
+    tbody.innerHTML = `<tr id="history-empty-row"><td colspan="4" style="text-align: center; color: var(--muted); padding: 30px;">ຍັງບໍ່ມີປະຫວັດການບັນທຶກຮັບສິນຄ້າໃນເຊນຊັ່ນນີ້</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = '';
+  receiveHistory.forEach(record => {
+    const itemsSummary = record.items.map(i => `${i.name} (${i.qty})`).join(', ');
+    const suppliers = [...new Set(record.items.map(i => i.supplier))].join(', ');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="hist-date">${record.date}</td>
+      <td class="hist-supplier"><span class="badge-supplier">${suppliers}</span><br><small class="hist-note">${record.note}</small></td>
+      <td class="hist-items" title="${itemsSummary}">${itemsSummary}</td>
+      <td class="hist-total">฿${record.total.toLocaleString()}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('btn-submit-all').addEventListener('click', () => {
+  if (receiveCart.length === 0) { alert('ບໍ່ພົບສິນຄ້າສໍາຫລັບດໍາເນີນການ ກະລຸນາເພີ່ມສິນຄ້າກ່ອນເຮັດການບັນທຶກຂໍ້ມູນ'); return; }
+  const grandTotal = receiveCart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+  const billDate = receiveCart[0].receiveDate || new Date().toISOString().split('T')[0];
+  receiveHistory.unshift({
+    date: billDate,
+    note: document.getElementById('receive-note').value.trim() || 'ບໍ່ມີໝາຍເຫດ',
+    items: [...receiveCart],
+    total: grandTotal
+  });
+  alert('🎉 ລະບົບເຮັດການບັນທຶກການຮັບເຂົ້າ ປະມວນຜົນອັບເດດສະຕອັກສິນຄ້າ ແລະຕັ້ງຄ່າການຂາຍໜ້າຮ້ານຮຽບຮ້ອຍແລ້ວ!');
+  receiveCart = [];
+  document.getElementById('receive-note').value = '';
+  renderCart();
+  renderHistory();
+});
+
+function exportHistoryPDF() {
+  if (receiveHistory.length === 0) {
+    alert('ຍັງບໍ່ມີປະຫວັດການຮັບສິນຄ້າໃຫ້ Export ');
+    return;
+  }
+  const now = new Date();
+  const d = String(now.getDate()).padStart(2,'0');
+  const m = String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById('print-date').innerText = `${d}/${m}/${now.getFullYear()}`;
+  window.print();
+}
+
+function handleLogout() {
+  if (confirm('ຕ້ອງການອອກຈາກລະບົບຫຼືບໍ່?')) {
+    localStorage.removeItem('aq_role');
+    localStorage.removeItem('aq_name');
+    localStorage.removeItem('aq_label');
+    window.location.href = 'login.html';
+  }
+}
+</script>
+
+</body>
+</html>

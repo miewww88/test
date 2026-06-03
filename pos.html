@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WillowShop — ຂາຍສິນຄ້າ (POS)</title>
+<script src="../js/auth.js"></script>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+.pos-wrap { display: grid; grid-template-columns: 1fr 360px; gap: 20px; height: calc(100vh - 56px); overflow: hidden; padding: 20px; }
+.left-panel { display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+.item-list { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
+  gap: 12px; 
+  overflow-y: auto; 
+  flex: 1; 
+  padding-right: 4px;
+  align-content: start;
+}
+.item-row { 
+  background: var(--surface); 
+  border: 1px solid var(--border); 
+  border-radius: 12px; 
+  padding: 0; 
+  display: flex; 
+  flex-direction: column; 
+  cursor: pointer; 
+  transition: all .15s; 
+  overflow: hidden;
+  position: relative;
+}
+.item-row:hover { border-color: rgba(56,189,248,.4); background: var(--surface2); transform: translateY(-2px); }
+.item-row.out-of-stock { opacity: .4; cursor: not-allowed; pointer-events: none; }
+.item-row.out-of-stock:hover { transform: none; border-color: var(--border); }
+.item-img-box {
+  width: 100%;
+  height: 110px;
+  background: #111827;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+.item-img-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .3s;
+}
+.item-row:hover .item-img-box img { transform: scale(1.05); }
+.item-details {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+.item-name { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; }
+.item-sub { font-size: 11px; color: var(--muted); font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item-meta { display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto; padding-top: 4px; }
+.item-price { font-family: var(--mono); font-size: 14px; color: var(--accent3); font-weight: 600; }
+.item-stock-info { font-size: 10px; color: var(--muted); font-family: var(--mono); }
+.item-stock-low { color: var(--danger); font-weight: bold; }
+.hidden { display: none !important; }
+
+.right-panel { display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+.cart-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.cart-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.cart-label { font-size: 13px; font-weight: 500; }
+.cart-count { font-size: 11px; font-family: var(--mono); color: var(--accent); background: rgba(56,189,248,.1); padding: 2px 8px; border-radius: 99px; }
+.cart-items { overflow-y: auto; flex: 1; padding: 8px 16px; }
+.cart-empty { text-align: center; color: var(--muted); font-size: 12px; padding: 30px 0; line-height: 2.2; }
+.cart-item { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid rgba(99,179,237,.05); }
+.cart-item:last-child { border-bottom: none; }
+.cart-item-name { font-size: 12px; flex: 1; line-height: 1.4; }
+.cart-item-type { font-size: 10px; font-family: var(--mono); padding: 1px 5px; border-radius: 99px; display: inline-block; }
+.type-fish { background: rgba(56,189,248,.1); color: var(--accent); }
+.type-food { background: rgba(52,211,153,.1); color: var(--accent3); }
+.qty-ctrl { display: flex; align-items: center; gap: 4px; }
+.qty-btn { width: 22px; height: 22px; border-radius: 5px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; }
+.qty-btn:hover { border-color: var(--accent); color: var(--accent); }
+.qty-num { font-family: var(--mono); font-size: 12px; min-width: 22px; text-align: center; }
+.cart-item-sub { font-family: var(--mono); font-size: 12px; color: var(--accent3); min-width: 60px; text-align: right; }
+
+.payment-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; flex-shrink: 0; }
+.pay-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; }
+.pay-label { color: var(--muted); }
+.pay-val { font-family: var(--mono); font-weight: 500; }
+.pay-total { font-size: 22px; font-weight: 600; color: var(--text); font-family: var(--mono); }
+.divider { height: 1px; background: var(--border); margin: 10px 0; }
+.pay-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+.pay-method { padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; font-family: var(--font); text-align: center; transition: all .15s; }
+.pay-method:hover { border-color: rgba(56,189,248,.3); color: var(--text); }
+.pay-method.selected { border-color: var(--accent); color: var(--accent); background: rgba(56,189,248,.08); }
+.cash-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.cash-group { display: flex; flex-direction: column; gap: 4px; }
+.cash-label { font-size: 11px; color: var(--muted); }
+.cash-input { width: 100%; padding: 7px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px; font-family: var(--mono); outline: none; transition: border .15s; box-sizing: border-box; }
+.cash-input:focus { border-color: rgba(56,189,248,.4); }
+.cash-change { width: 100%; padding: 7px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: var(--mono); outline: none; box-sizing: border-box; }
+.change-pos { color: var(--accent3); border-color: rgba(52,211,153,.3); }
+.change-neg { color: var(--danger); border-color: rgba(248,113,113,.3); }
+.checkout-btn { width: 100%; padding: 11px; background: linear-gradient(135deg,var(--accent),var(--accent2)); border: none; border-radius: 8px; color: #0a0f1a; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font); transition: all .15s; margin-bottom: 6px; }
+.checkout-btn:hover { opacity: .9; }
+.checkout-btn:disabled { opacity: .4; cursor: not-allowed; }
+.clear-btn { width: 100%; padding: 7px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 12px; cursor: pointer; font-family: var(--font); transition: all .15s; }
+.clear-btn:hover { border-color: rgba(248,113,113,.3); color: var(--danger); }
+
+.history-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-top: 4px; }
+.history-header { padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.history-title { font-size: 12px; font-weight: 500; }
+.history-list { max-height: 160px; overflow-y: auto; }
+.history-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; border-bottom: 1px solid rgba(99,179,237,.05); font-size: 12px; }
+.history-item:last-child { border-bottom: none; }
+.history-name { color: var(--text); flex: 1; }
+.history-time { font-family: var(--mono); color: var(--muted); font-size: 11px; margin: 0 10px; }
+.history-amount { font-family: var(--mono); color: var(--accent3); }
+.history-empty { text-align: center; color: var(--muted); font-size: 12px; padding: 16px; }
+
+.toast { position: fixed; top: 20px; right: 20px; background: var(--surface); border: 1px solid rgba(52,211,153,.3); border-radius: 10px; padding: 12px 18px; font-size: 13px; color: var(--accent3); z-index: 999; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 20px rgba(0,0,0,.3); animation: slideIn .2s ease; }
+@keyframes slideIn { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.7); display: flex; align-items: center;
+  justify-content: center; z-index: 1000; opacity: 0; pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.modal-overlay.active { opacity: 1; pointer-events: auto; }
+.modal-content {
+  background: #ffffff; color: #000000; width: 340px; border-radius: 12px;
+  padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  display: flex; flex-direction: column; gap: 15px;
+}
+.receipt-paper { font-family: 'Courier New', Courier, monospace; font-size: 13px; line-height: 1.4; background: #fff; padding: 10px 5px; color: #000; }
+.receipt-header { text-align: center; margin-bottom: 10px; }
+.receipt-shop-name { font-size: 18px; font-weight: bold; }
+.receipt-line { border-top: 1px dashed #000; margin: 8px 0; }
+.receipt-row { display: flex; justify-content: space-between; }
+.receipt-items-list { margin: 10px 0; }
+.receipt-item-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.receipt-total-row { font-weight: bold; font-size: 15px; }
+.modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn-modal { padding: 10px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; text-align: center; }
+.btn-print { background: #38bdf8; color: #fff; }
+.btn-close { background: #e5e7eb; color: #374151; }
+
+/* ── Logout Button ── */
+.logout-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 8px;
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.logout-btn:hover {
+  background: rgba(239,68,68,0.15);
+  border-color: rgba(239,68,68,0.35);
+}
+
+@media print {
+  body * { visibility: hidden; }
+  #print-receipt-area, #print-receipt-area * { visibility: visible; }
+  #print-receipt-area { position: absolute; left: 0; top: 0; width: 100%; background: #ffffff !important; color: #000000 !important; display: block !important; padding: 0; margin: 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">🐠</div>
+    <div class="logo-name">WillowShop</div>
+    <div class="logo-sub">ລະບົບຈັດການຮ້ານຂາຍປາສວຍງາມ</div>
+  </div>
+  <div class="nav">
+    <div class="nav-label">ເມນູຫຼັກ</div>
+    <a class="nav-item" href="stock.html"><span class="nav-icon">📦</span> ສະຕອັກ</a>
+    <a class="nav-item active" href="pos.html"><span class="nav-icon">🛒</span> ຂາຍສິນຄ້າ</a>
+    <a class="nav-item" href="supplier.html"><span class="nav-icon">🚚</span> ຮັບປາເຂົ້າ</a>
+    <a class="nav-item" href="report.html"><span class="nav-icon">📊</span> ລາຍງານ</a>
+    <div class="nav-label">ລະບົບ</div>
+    <a class="nav-item" href="#"><span class="nav-icon">⚙️</span> ຕັ້ງຄ່າ</a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-pill">
+      <div class="avatar">A</div>
+      <div><div class="user-name">Admin</div><div class="user-role">ເຈົ້າຂອງຮ້ານ</div></div>
+    </div>
+    <button class="logout-btn" onclick="handleLogout()">🚪 ອອກຈາກລະບົບ</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title">ຂາຍສິນຄ້າ (POS)</div>
+      <div class="page-sub">ເລືອກສິນຄ້າ → ໃສ່ຕະກ້າ → ຊໍາລະເງິນ</div>
+    </div>
+    <div class="topbar-right">
+      <input class="search-box" id="searchBox" placeholder="🔍 ຄົ້ນຫາສິນຄ້າ..." oninput="filterItems()">
+    </div>
+  </div>
+
+  <div class="pos-wrap">
+    <div class="left-panel">
+      <div class="tab-bar" style="flex-shrink:0">
+        <div class="tab active" id="tab-fish" onclick="switchTab('fish')">🐟 ປານໍ້າຈືດ</div>
+        <div class="tab" id="tab-food" onclick="switchTab('food')">🥣 ຫົວອາຫານປາ</div>
+      </div>
+
+      <div class="item-list" id="item-list">
+        <div class="item-row" data-type="fish" onclick="addToCart(this)" data-id="1" data-name="ปลากัด" data-price="150" data-stock="12" data-img="https://images.unsplash.com/photo-1534043464124-3be32fe000c9?w=300&q=80">
+          <div class="item-img-box"><img src="https://images.unsplash.com/photo-1534043464124-3be32fe000c9?w=300&q=80" alt="ปลากัด"></div>
+          <div class="item-details">
+            <div class="item-name">ปลากัด</div><div class="item-sub">Betta splendens</div>
+            <div class="item-meta"><div class="item-price">฿150</div><div class="item-stock-info">เหลือ 12 ตัว</div></div>
+          </div>
+        </div>
+        <div class="item-row" data-type="fish" onclick="addToCart(this)" data-id="2" data-name="ປາທອງ" data-price="80" data-stock="3" data-img="https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?w=300&q=80">
+          <div class="item-img-box"><img src="https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?w=300&q=80" alt="ປາທອງ"></div>
+          <div class="item-details">
+            <div class="item-name">ປາທອງ</div><div class="item-sub">Carassius auratus</div>
+            <div class="item-meta"><div class="item-price">฿80</div><div class="item-stock-info item-stock-low">ເຫຼືອ 3 ໂຕ</div></div>
+          </div>
+        </div>
+        <div class="item-row" data-type="fish" onclick="addToCart(this)" data-id="3" data-name="ปลานีออน" data-price="25" data-stock="50" data-img="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300&q=80">
+          <div class="item-img-box"><img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300&q=80" alt="ปลานีออน"></div>
+          <div class="item-details">
+            <div class="item-name">ปลานีออน</div><div class="item-sub">Paracheirodon innesi</div>
+            <div class="item-meta"><div class="item-price">฿25</div><div class="item-stock-info">เหลือ 50 ตัว</div></div>
+          </div>
+        </div>
+        <div class="item-row" data-type="fish" onclick="addToCart(this)" data-id="4" data-name="ปลาดิสคัส" data-price="1200" data-stock="5" data-img="https://images.unsplash.com/photo-1572111504021-40afd33e15dd?w=300&q=80">
+          <div class="item-img-box"><img src="https://images.unsplash.com/photo-1572111504021-40afd33e15dd?w=300&q=80" alt="ปลาดิสคัส"></div>
+          <div class="item-details">
+            <div class="item-name">ปลาดิสคัส</div><div class="item-sub">Symphysodon spp.</div>
+            <div class="item-meta"><div class="item-price">฿1,200</div><div class="item-stock-info">ເຫຼືອ 5 ໂຕ</div></div>
+          </div>
+        </div>
+        <div class="item-row" data-type="fish" onclick="addToCart(this)" data-id="5" data-name="ປາອະໂຣວານ່າ" data-price="8500" data-stock="2" data-img="https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&q=80">
+          <div class="item-img-box"><img src="https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&q=80" alt="ປາອະໂຣວານ່າ"></div>
+          <div class="item-details">
+            <div class="item-name">ປາອະໂຣວານ່າ</div><div class="item-sub">Scleropages formosus</div>
+            <div class="item-meta"><div class="item-price">฿8,500</div><div class="item-stock-info item-stock-low">ເຫຼືອ 2 ໂຕ</div></div>
+          </div>
+        </div>
+        <div class="item-row" data-type="fish" onclick="addToCart(this)" data-id="6" data-name="ປາຫາງນົກຍູງ" data-price="30" data-stock="80" data-img="https://images.unsplash.com/photo-1617130456185-da943e3fcc17?w=300&q=80">
+          <div class="item-img-box"><img src="https://images.unsplash.com/photo-1617130456185-da943e3fcc17?w=300&q=80" alt="ປາຫາງນົກຍູງ"></div>
+          <div class="item-details">
+            <div class="item-name">ປາຫາງນົກຍູງ</div><div class="item-sub">Poecilia reticulata</div>
+            <div class="item-meta"><div class="item-price">฿30</div><div class="item-stock-info">ເຫຼືອ 80 ໂຕ</div></div>
+          </div>
+        </div>
+        <div class="item-row hidden" data-type="food" onclick="addToCart(this)" data-id="101" data-name="อาหารปลากัด" data-price="45" data-stock="20" data-img="https://images.unsplash.com/photo-1608454537062-4093bf3df404?w=300&q=80">
+          <div class="item-img-box"><img src="https://images.unsplash.com/photo-1608454537062-4093bf3df404?w=300&q=80" alt="ອາຫານປາກັດ"></div>
+          <div class="item-details">
+            <div class="item-name">ອາຫານປາກັດ</div><div class="item-sub">Betta Bits — Hikari</div>
+            <div class="item-meta"><div class="item-price">฿45</div><div class="item-stock-info">ເຫຼືອ 20 ຖົງ</div></div>
+          </div>
+        </div>
+        <div class="item-row hidden" data-type="food" onclick="addToCart(this)" data-id="102" data-name="อาหารปลาทอง" data-price="60" data-stock="15" data-img="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300&q=80">
+          <div class="item-img-box"><img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300&q=80" alt="ອາຫານປາທອງ"></div>
+          <div class="item-details">
+            <div class="item-name">ອາຫານປາທອງ</div><div class="item-sub">Goldfish Pellet — Tetra</div>
+            <div class="item-meta"><div class="item-price">฿60</div><div class="item-stock-info">ເຫຼືອ 15 ປ໋ອງ</div></div>
+          </div>
+        </div>
+        <div class="item-row hidden" data-type="food" onclick="addToCart(this)" data-id="103" data-name="ອາຫານປາທົ່ວໄປ" data-price="55" data-stock="18" data-img="https://images.unsplash.com/photo-1626618012641-bfbca5a31239?w=300&q=80">
+          <div class="item-img-box"><img src="https://images.unsplash.com/photo-1626618012641-bfbca5a31239?w=300&q=80" alt="ອາຫານປາທົ່ວໄປ"></div>
+          <div class="item-details">
+            <div class="item-name">ອາຫານປາທົ່ວໄປ</div><div class="item-sub">Tropical Flakes — Sera</div>
+            <div class="item-meta"><div class="item-price">฿55</div><div class="item-stock-info">ເຫຼືອ 18 ປ໋ອງ</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <div class="cart-box">
+        <div class="cart-header">
+          <div class="cart-label">🛒 ກະຕ່າສິນຄ້າ</div>
+          <div class="cart-count" id="cart-count">0 ລາຍການ</div>
+        </div>
+        <div class="cart-items" id="cart-items">
+          <div class="cart-empty">ຍັງບໍ່ມີສິນຄ້າ<br>👈 ກົດເລືອກຈາກດ້ານຊ້າຍ</div>
+        </div>
+      </div>
+
+      <div class="payment-box">
+        <div class="pay-row">
+          <span class="pay-label">ລວມທັງໝົດ</span>
+          <span class="pay-val pay-total" id="total-amount">฿0</span>
+        </div>
+        <div class="divider"></div>
+        <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:6px">ວິທີຊໍາລະເງິນ</div>
+        <div class="pay-methods">
+          <button class="pay-method selected" id="pay-cash" onclick="selectPayMethod('cash')">💵 ເງິນສົດ</button>
+          <button class="pay-method" id="pay-transfer" onclick="selectPayMethod('transfer')">📱 ໂອນເງິນ</button>
+        </div>
+        <div id="cash-section" class="cash-row">
+          <div class="cash-group">
+            <span class="cash-label">ຮັບເງິນມາ (฿)</span>
+            <input class="cash-input" id="cash-input" type="number" placeholder="0" oninput="calcChange()">
+          </div>
+          <div class="cash-group">
+            <span class="cash-label">ເງິນທອນ (฿)</span>
+            <input class="cash-change" id="cash-change" readonly placeholder="0">
+          </div>
+        </div>
+        <button class="checkout-btn" id="checkout-btn" onclick="checkout()" disabled>✓ ຊໍາລະເງິນ</button>
+        <button class="clear-btn" onclick="clearCart()">🗑 ລ້າງຕະກ້າ</button>
+      </div>
+
+      <div class="history-box">
+        <div class="history-header">
+          <div class="history-title">🧾 ປະຫວັດການຂາຍມື້ນີ້</div>
+          <span style="font-size:11px;font-family:var(--mono);color:var(--muted)" id="history-count">0 ບິນ</span>
+        </div>
+        <div class="history-list" id="history-list">
+          <div class="history-empty">ຍັງບໍ່ມີການຂາຍມື້ນີ້</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="receiptModal">
+  <div class="modal-content">
+    <div id="view-receipt-area" class="receipt-paper"></div>
+    <div class="modal-actions">
+      <button class="btn-modal btn-print" onclick="printReceipt()">🖨 ພິມໃບບິນ</button>
+      <button class="btn-modal btn-close" onclick="closeReceiptModal()">ປິດໜ້າຕ່າງ</button>
+    </div>
+  </div>
+</div>
+
+<div id="print-receipt-area" class="receipt-paper" style="display: none;"></div>
+
+<script>
+let cart = {};
+let payMethod = 'cash';
+let salesHistory = []; 
+let stock = {};
+let currentTab = 'fish'; 
+
+function initStock() {
+  document.querySelectorAll('.item-row[data-id]').forEach(row => {
+    const key = row.dataset.id + '-' + row.dataset.type;
+    stock[key] = parseInt(row.dataset.stock);
+  });
+  renderStockUI();
+}
+
+function renderStockUI() {
+  document.querySelectorAll('.item-row[data-id]').forEach(row => {
+    const key = row.dataset.id + '-' + row.dataset.type;
+    const currentStock = stock[key];
+    const infoEl = row.querySelector('.item-stock-info');
+    if (infoEl) {
+      infoEl.textContent = `ເຫຼືອ ${currentStock} ${row.dataset.type === 'fish' ? 'ໂຕ' : 'ຊອງ'}`;
+      infoEl.className = (currentStock <= 3 && currentStock > 0) ? "item-stock-info item-stock-low" : "item-stock-info";
+    }
+    if (currentStock <= 0) {
+      row.classList.add('out-of-stock');
+      if (infoEl) infoEl.textContent = 'ສິນຄ້າໝົດ';
+    } else {
+      row.classList.remove('out-of-stock');
+    }
+  });
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tab-fish').classList.toggle('active', tab === 'fish');
+  document.getElementById('tab-food').classList.toggle('active', tab === 'food');
+  filterItems();
+}
+
+function addToCart(row) {
+  if (row.classList.contains('out-of-stock')) return;
+  const key = row.dataset.id + '-' + row.dataset.type;
+  const maxStock = stock[key];
+  const cur = cart[key] ? cart[key].qty : 0;
+  if (cur >= maxStock) { showToast('⚠ ສິນຄ້າໃນສະຕອັກບໍ່ພໍຂາຍແລ້ວ'); return; }
+  if (!cart[key]) {
+    cart[key] = { id: row.dataset.id, name: row.dataset.name, type: row.dataset.type, price: parseInt(row.dataset.price), qty: 0 };
+  }
+  cart[key].qty++;
+  renderCart();
+}
+
+function changeQty(key, delta) {
+  if (!cart[key]) return;
+  const maxStock = stock[key];
+  cart[key].qty += delta;
+  if (cart[key].qty > maxStock) { cart[key].qty = maxStock; showToast('⚠ ສິນຄ້າໃນສະຕອັກບໍ່ພໍຂາຍແລ້ວ'); }
+  if (cart[key].qty <= 0) delete cart[key];
+  renderCart();
+}
+
+function clearCart() {
+  cart = {};
+  document.getElementById('cash-input').value = '';
+  document.getElementById('cash-change').value = '';
+  document.getElementById('cash-change').className = 'cash-change';
+  renderCart();
+}
+
+function renderCart() {
+  const keys = Object.keys(cart);
+  const countEl = document.getElementById('cart-count');
+  const itemsEl = document.getElementById('cart-items');
+  const totalEl = document.getElementById('total-amount');
+  const checkoutBtn = document.getElementById('checkout-btn');
+  countEl.textContent = keys.length + ' ລາຍການ';
+  if (keys.length === 0) {
+    itemsEl.innerHTML = '<div class="cart-empty">ຍັງບໍ່ມີສິນຄ້າ<br>👈 ກົດເລືອກຈາກດ້ານຊ້າຍ</div>';
+    totalEl.textContent = '฿0';
+    checkoutBtn.disabled = true;
+    document.getElementById('cash-input').value = '';
+    document.getElementById('cash-change').value = '';
+    return;
+  }
+  let total = 0;
+  let html = '';
+  keys.forEach(key => {
+    const i = cart[key];
+    const sub = i.price * i.qty;
+    total += sub;
+    const tag = i.type === 'fish'
+      ? '<span class="cart-item-type type-fish">ປາ</span>'
+      : '<span class="cart-item-type type-food">ອາຫານປາ</span>';
+    html += `<div class="cart-item">
+      <div class="cart-item-name">${i.name} ${tag}</div>
+      <div class="qty-ctrl">
+        <button class="qty-btn" onclick="changeQty('${key}',-1)">−</button>
+        <span class="qty-num">${i.qty}</span>
+        <button class="qty-btn" onclick="changeQty('${key}',1)">+</button>
+      </div>
+      <div class="cart-item-sub">฿${sub.toLocaleString()}</div>
+    </div>`;
+  });
+  itemsEl.innerHTML = html;
+  totalEl.textContent = '฿' + total.toLocaleString();
+  checkoutBtn.disabled = false;
+  calcChange(); 
+}
+
+function getTotal() {
+  return Object.values(cart).reduce((s, i) => s + i.price * i.qty, 0);
+}
+
+function selectPayMethod(method) {
+  payMethod = method;
+  document.getElementById('pay-cash').classList.toggle('selected', method === 'cash');
+  document.getElementById('pay-transfer').classList.toggle('selected', method === 'transfer');
+  document.getElementById('cash-section').style.display = method === 'cash' ? 'grid' : 'none';
+  calcChange();
+}
+
+function calcChange() {
+  if (payMethod !== 'cash') return;
+  const received = parseFloat(document.getElementById('cash-input').value) || 0;
+  const total = getTotal();
+  const change = received - total;
+  const changeEl = document.getElementById('cash-change');
+  if (received === 0) { changeEl.value = ''; changeEl.className = 'cash-change'; return; }
+  changeEl.value = change >= 0 ? change.toLocaleString() : 'ບໍ່ພໍ';
+  changeEl.className = 'cash-change ' + (change >= 0 ? 'change-pos' : 'change-neg');
+}
+
+function checkout() {
+  const total = getTotal();
+  if (total === 0) return;
+  let received = total;
+  if (payMethod === 'cash') {
+    received = parseFloat(document.getElementById('cash-input').value) || 0;
+    if (received < total) { showToast('⚠ ຮັບເງິນມາບໍ່ພໍ'); return; }
+  }
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+  const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  const itemsSummary = Object.values(cart).map(i => i.name + ' ×' + i.qty).join(', ');
+  salesHistory.unshift({ items: itemsSummary, time: timeStr, total, method: payMethod });
+  generateReceipt(dateStr, timeStr, total, received);
+  Object.keys(cart).forEach(key => { stock[key] = (stock[key] || 0) - cart[key].qty; });
+  showToast('✓ ຊໍາລະເງິນສໍາເລັດ!');
+  clearCart();
+  renderStockUI();
+  renderHistory();
+}
+
+function generateReceipt(date, time, total, received) {
+  const viewArea = document.getElementById('view-receipt-area');
+  const printArea = document.getElementById('print-receipt-area');
+  const change = received - total;
+  const billId = 'INV-' + Math.floor(Math.random() * 90000 + 10000);
+  let itemsHtml = '';
+  Object.values(cart).forEach(i => {
+    itemsHtml += `<div class="receipt-item-row"><span>${i.name} x${i.qty}</span><span>฿${(i.price * i.qty).toLocaleString()}</span></div>`;
+  });
+  const receiptContent = `
+    <div class="receipt-header">
+      <div class="receipt-shop-name">🐠 WillowShop</div>
+      <div>ລະບົບຈັດການຮ້ານປາຄົບວົງຈອນ</div>
+    </div>
+    <div class="receipt-line"></div>
+    <div class="receipt-row"><span>ເລກທີ່ບິນ:</span> <span>${billId}</span></div>
+    <div class="receipt-row"><span>ວັນທີ່:</span> <span>${date}</span></div>
+    <div class="receipt-row"><span>ເວລາ:</span> <span>${time} ນ.</span></div>
+    <div class="receipt-line"></div>
+    <div class="receipt-items-list">${itemsHtml}</div>
+    <div class="receipt-line"></div>
+    <div class="receipt-row receipt-total-row"><span>ຍອດລວມທັງໝົດ:</span><span>฿${total.toLocaleString()}</span></div>
+    <div class="receipt-row"><span>ຊໍາລະດ້ວຍ:</span><span>${payMethod === 'cash' ? '💵 ເງິນສົດ' : '📱 ໂອນເງິນ'}</span></div>
+    <div class="receipt-row"><span>ຮັບເງິນມາ:</span><span>฿${received.toLocaleString()}</span></div>
+    <div class="receipt-row"><span>ເງິນທອນ:</span><span>฿${change >= 0 ? change.toLocaleString() : '0'}</span></div>
+    <div class="receipt-line"></div>
+    <div class="receipt-header" style="margin-top:10px; font-size:11px;">ຂອບໃຈທີ່ໃຊ້ບໍລິການ / Thank You</div>
+  `;
+  viewArea.innerHTML = receiptContent;
+  printArea.innerHTML = receiptContent;
+  document.getElementById('receiptModal').classList.add('active');
+}
+
+function printReceipt() { window.print(); }
+function closeReceiptModal() { document.getElementById('receiptModal').classList.remove('active'); }
+
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  document.getElementById('history-count').textContent = salesHistory.length + ' ບິນ';
+  if (salesHistory.length === 0) { el.innerHTML = '<div class="history-empty">ຍັງບໍ່ມີການຂາຍມື້ນີ້</div>'; return; }
+  el.innerHTML = salesHistory.map(h => `
+    <div class="history-item">
+      <div class="history-name">${h.items}</div>
+      <div class="history-time">${h.time}</div>
+      <div class="history-amount">฿${h.total.toLocaleString()}</div>
+    </div>`).join('');
+}
+
+function filterItems() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  document.querySelectorAll('.item-row[data-id]').forEach(row => {
+    const name = row.querySelector('.item-name').textContent.toLowerCase();
+    const matchesSearch = name.includes(q);
+    const matchesTab = row.dataset.type === currentTab;
+    row.classList.toggle('hidden', q === '' ? !matchesTab : !matchesSearch);
+  });
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+function handleLogout() {
+  if (confirm('ຕ້ອງການອອກຈາກລະບົບຫຼືບໍ່?')) {
+    localStorage.removeItem('aq_role');
+    localStorage.removeItem('aq_name');
+    localStorage.removeItem('aq_label');
+    window.location.href = 'login.html';
+  }
+}
+
+window.onload = initStock;
+</script>
+
+</body>
+</html>
